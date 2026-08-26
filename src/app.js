@@ -8,45 +8,69 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Import routes
-const authRoutes = require('./routes/authRoutes');
-const roomRoutes = require('./routes/roomRoutes');
-const bookingRoutes = require('./routes/bookingRoutes');
-// const adminRoutes = require('./routes/adminRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
-
-// Security middleware
-app.use(helmet());
+// ============================================
+// 1. CORS - Permite toate originile pentru demo
+// ============================================
 app.use(cors({
-    origin: [
-        process.env.FRONTEND_URL || 'http://localhost:3000',
-        'http://localhost:5173',
-        'https://azurebayresort-frontend.onrender.com',
-        'https://azurebayresort-frontend.vercel.app' 
-    ],
-    credentials: true
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Rate limiting
+// ============================================
+// 2. Helmet - Configurat pentru cross-origin
+// ============================================
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+}));
+
+// ============================================
+// 3. Headere suplimentare pentru toate rutele
+// ============================================
+app.use((req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+});
+
+// ============================================
+// 4. Servește imagini cu headere CORS
+// ============================================
+app.use('/media', (req, res, next) => {
+    // Headere specifice pentru imagini
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache 1 an
+    next();
+}, express.static('media'));
+
+// ============================================
+// 5. Restul middleware
+// ============================================
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
+    windowMs: 15 * 60 * 1000,
+    max: 100
 });
 app.use('/api', limiter);
 
-// Body parser middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (for room images)
-app.use('/media', express.static('media'));
+// ============================================
+// 6. Routes
+// ============================================
+const authRoutes = require('./routes/authRoutes');
+const roomRoutes = require('./routes/roomRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
-// ===== HEALTH CHECK =====
+// Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Azure Bay Resort API is running!' });
 });
 
-// ===== TEST DATABASE CONNECTION =====
+// Test DB
 app.get('/api/test-db', async (req, res) => {
     try {
         const pool = require('./config/database');
@@ -65,33 +89,12 @@ app.get('/api/test-db', async (req, res) => {
     }
 });
 
-// ===== TEST ROOMS ENDPOINT =====
-app.get('/api/test-rooms', async (req, res) => {
-    try {
-        const pool = require('./config/database');
-        const result = await pool.query('SELECT * FROM rooms LIMIT 5');
-        res.json({
-            success: true,
-            count: result.rows.length,
-            rooms: result.rows
-        });
-    } catch (error) {
-        console.error('❌ Test rooms error:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
-    }
-});
-
-// ===== ROUTES =====
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/bookings', bookingRoutes);
-// app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 
-// ===== ERROR HANDLING MIDDLEWARE =====
+// Error handling
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ 
@@ -100,13 +103,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// ===== 404 HANDLER =====
-app.use((req, res) => {
-    res.status(404).json({ message: 'Route not found' });
-});
-
 app.listen(PORT, () => {
     console.log(`🚀 Azure Bay Resort Server running on port ${PORT}`);
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 API URL: http://localhost:${PORT}/api`);
 });
