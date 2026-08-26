@@ -41,19 +41,57 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files (for room images)
 app.use('/media', express.static('media'));
 
-// Health check
+// ===== HEALTH CHECK =====
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', message: 'Azure Bay Resort API is running!' });
 });
 
-// Routes
+// ===== TEST DATABASE CONNECTION =====
+app.get('/api/test-db', async (req, res) => {
+    try {
+        const pool = require('./config/database');
+        const result = await pool.query('SELECT NOW() as time, COUNT(*) as room_count FROM rooms');
+        res.json({
+            success: true,
+            time: result.rows[0].time,
+            roomCount: parseInt(result.rows[0].room_count)
+        });
+    } catch (error) {
+        console.error('❌ Test DB error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ===== TEST ROOMS ENDPOINT =====
+app.get('/api/test-rooms', async (req, res) => {
+    try {
+        const pool = require('./config/database');
+        const result = await pool.query('SELECT * FROM rooms LIMIT 5');
+        res.json({
+            success: true,
+            count: result.rows.length,
+            rooms: result.rows
+        });
+    } catch (error) {
+        console.error('❌ Test rooms error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ===== ROUTES =====
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/bookings', bookingRoutes);
 // app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 
-// Error handling middleware
+// ===== ERROR HANDLING MIDDLEWARE =====
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ 
@@ -62,7 +100,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// 404 handler
+// ===== 404 HANDLER =====
 app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });
 });

@@ -50,12 +50,13 @@ const schemas = {
                 'string.min': 'Full name must be at least 2 characters long',
                 'any.required': 'Full name is required'
             }),
-        phone: Joi.string()
-            .pattern(/^[0-9+\-\s()]+$/)
-            .optional()
-            .messages({
-                'string.pattern.base': 'Please provide a valid phone number'
-            })
+        // UK Phone Pattern
+		phone: Joi.string()
+		  .pattern(/^(\+44\s?7\d{3}|\(?07\d{3}\)?)\s?\d{3}\s?\d{3}$/)
+		  .optional()
+		  .messages({
+			'string.pattern.base': 'Please provide a valid UK phone number (e.g., +44 7123 456789)'
+		  })
     }),
 
     // Login validation
