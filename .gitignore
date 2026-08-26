@@ -1,0 +1,66 @@
+# backend/.gitignore
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Deployment
+.vercel/
+.netlify/
+*.pid
+*.seed
+
+# Database
+*.sqlite
+*.db
+
+# Uploads
+uploads/
+
+# Package manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Docker
+docker-compose.override.yml
+*.dockerignore
+
+# Misc
+.prettierrc
+.eslintrc
+*.tgz
