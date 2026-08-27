@@ -68,33 +68,46 @@ class Booking {
      * @param {Object} bookingData - Booking data
      * @returns {Promise<Object>} Created booking
      */
+	// backend/src/models/Booking.js
 	static async create(bookingData) {
+		const { 
+			user_id, 
+			room_id, 
+			check_in_date, 
+			check_out_date, 
+			total_price, 
+			guest_count = 1, 
+			special_requests = '',
+			guest_name = null,
+			guest_email = null
+		} = bookingData;
+
 		try {
-			console.log('🔍 [Booking.create] START');
-			console.log('📝 Booking data:', bookingData);
-
-			const { user_id, room_id, check_in_date, check_out_date, total_price, guest_count = 1, special_requests = '' } = bookingData;
-
-			// Check if room is available
-			console.log('🔍 [Booking.create] Checking availability...');
-			const isAvailable = await this.isRoomAvailable(room_id, check_in_date, check_out_date);
-			if (!isAvailable) {
-				console.log('❌ [Booking.create] Room not available');
-				throw new Error('Room is not available for the selected dates');
-			}
-			console.log('✅ [Booking.create] Room is available');
-
-			console.log('🔍 [Booking.create] Inserting into database...');
 			const result = await pool.query(
-				`INSERT INTO bookings (user_id, room_id, check_in_date, check_out_date, total_price, status, guest_count, special_requests)
-				 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-				 RETURNING *`,
-				[user_id, room_id, check_in_date, check_out_date, total_price, 'pending', guest_count, special_requests]
+				`INSERT INTO bookings (
+					user_id, room_id, check_in_date, check_out_date, 
+					total_price, guest_count, special_requests, 
+					guest_name, guest_email, status
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+				RETURNING id, user_id, room_id, check_in_date, check_out_date, 
+						  total_price, guest_count, status, special_requests,
+						  guest_name, guest_email, created_at`,
+				[
+					user_id, 
+					room_id, 
+					check_in_date, 
+					check_out_date, 
+					total_price, 
+					guest_count, 
+					special_requests,
+					guest_name,
+					guest_email,
+					'pending'
+				]
 			);
-			console.log('✅ [Booking.create] Booking inserted:', result.rows[0].id);
 			return result.rows[0];
 		} catch (error) {
-			console.error('❌ [Booking.create] ERROR:', error);
+			console.error('Create booking error:', error);
 			throw error;
 		}
 	}

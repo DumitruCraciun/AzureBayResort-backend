@@ -107,45 +107,62 @@ const schemas = {
 
     // Create booking
     createBooking: Joi.object({
-        room_id: Joi.string()
-            .uuid()
-            .required()
-            .messages({
-                'string.uuid': 'Invalid room ID format',
-                'any.required': 'Room ID is required'
-            }),
-        check_in_date: Joi.date()
-            .iso()
-            .required()
-            .messages({
-                'date.base': 'Invalid check-in date format',
-                'any.required': 'Check-in date is required'
-            }),
-        check_out_date: Joi.date()
-            .iso()
-            .greater(Joi.ref('check_in_date'))
-            .required()
-            .messages({
-                'date.base': 'Invalid check-out date format',
-                'date.greater': 'Check-out date must be after check-in date',
-                'any.required': 'Check-out date is required'
-            }),
-        guest_count: Joi.number()
-            .integer()
-            .min(1)
-            .max(10)
-            .default(1)
-            .messages({
-                'number.min': 'At least 1 guest required',
-                'number.max': 'Maximum 10 guests allowed'
-            }),
-        special_requests: Joi.string()
-            .max(500)
-            .optional()
-            .messages({
-                'string.max': 'Special requests cannot exceed 500 characters'
-            })
-    }), 
+		room_id: Joi.string()
+			.uuid()
+			.required()
+			.messages({
+				'string.uuid': 'Invalid room ID format',
+				'any.required': 'Room ID is required'
+			}),
+		check_in_date: Joi.date()
+			.iso()
+			.required()
+			.messages({
+				'date.base': 'Invalid check-in date format',
+				'any.required': 'Check-in date is required'
+			}),
+		check_out_date: Joi.date()
+			.iso()
+			.greater(Joi.ref('check_in_date'))
+			.required()
+			.messages({
+				'date.base': 'Invalid check-out date format',
+				'date.greater': 'Check-out date must be after check-in date',
+				'any.required': 'Check-out date is required'
+			}),
+		guest_count: Joi.number()
+			.integer()
+			.min(1)
+			.max(10)
+			.default(1)
+			.messages({
+				'number.min': 'At least 1 guest required',
+				'number.max': 'Maximum 10 guests allowed'
+			}),
+		special_requests: Joi.string()
+			.max(500)
+			.optional()
+			.messages({
+				'string.max': 'Special requests cannot exceed 500 characters'
+			}),
+		
+		guest_name: Joi.string()
+			.min(2)
+			.max(100)
+			.optional()
+			.allow(null, '')
+			.messages({
+				'string.min': 'Guest name must be at least 2 characters',
+				'string.max': 'Guest name cannot exceed 100 characters'
+			}),
+		guest_email: Joi.string()
+			.email()
+			.optional()
+			.allow(null, '')
+			.messages({
+				'string.email': 'Please provide a valid email address'
+			})
+	}), 
 
     updateBookingStatus: Joi.object({
         status: Joi.string()
