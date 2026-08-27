@@ -8,66 +8,68 @@ const createPaymentIntent = async (req, res) => {
         const { bookingId } = req.body;
         const userId = req.userId;
 
-        // Get booking details
+        console.log('📝 Creating Checkout Session for booking:', bookingId);
+
         const booking = await Booking.findById(bookingId);
         if (!booking) {
-            return res.status(404).json({
-                message: 'Booking not found.'
-            });
+            return res.status(404).json({ message: 'Booking not found.' });
         }
 
-        // Check if user owns this booking
         if (booking.user_id !== userId) {
-            return res.status(403).json({
-                message: 'You do not have permission to pay for this booking.'
-            });
+            return res.status(403).json({ message: 'Unauthorized.' });
         }
 
-        // Check if booking is already paid
         if (booking.status === 'confirmed') {
-            return res.status(400).json({
-                message: 'This booking has already been confirmed.'
-            });
+            return res.status(400).json({ message: 'Booking already confirmed.' });
         }
 
         if (booking.status === 'cancelled') {
-            return res.status(400).json({
-                message: 'Cannot pay for a cancelled booking.'
-            });
+            return res.status(400).json({ message: 'Cannot pay for a cancelled booking.' });
         }
 
-        // Create Stripe Payment Intent
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(booking.total_price * 100), // Convert to cents/pence
-            currency: 'gbp',
+        // 🔥 Creează Checkout Session
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'gbp',
+                        product_data: {
+                            name: `Azure Bay Resort - ${booking.room_type || 'Room'}`,
+                            description: `${booking.check_in_date} to ${booking.check_out_date}`,
+                        },
+                        unit_amount: Math.round(booking.total_price * 100),
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/booking-confirmation/${booking.id}?success=true`,
+            cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/booking/${booking.id}?canceled=true`,
             metadata: {
                 bookingId: booking.id,
                 userId: userId,
-                roomId: booking.room_id
             },
-            description: `Booking for ${booking.room_type} - ${booking.check_in_date} to ${booking.check_out_date}`
         });
 
-        // Update booking with payment intent ID
+        console.log('✅ Checkout Session created:', session.id);
+
+        // Update booking with session ID
         await pool.query(
             `UPDATE bookings 
              SET stripe_payment_intent_id = $1
              WHERE id = $2`,
-            [paymentIntent.id, booking.id]
+            [session.id, booking.id]
         );
 
         res.json({
-            clientSecret: paymentIntent.client_secret,
-            paymentIntentId: paymentIntent.id,
-            amount: paymentIntent.amount / 100,
-            currency: paymentIntent.currency
+            sessionId: session.id,
+            url: session.url,
         });
 
     } catch (error) {
-        console.error('Create payment intent error:', error);
-        res.status(500).json({
-            message: 'Failed to create payment. Please try again later.'
-        });
+        console.error('❌ Create payment error:', error);
+        res.status(500).json({ message: 'Failed to create payment.' });
     }
 };
 
