@@ -3,37 +3,55 @@ const { Booking, Room, User } = require('../models');
 
 const createBooking = async (req, res) => {
     try {
+		console.log('🔍 [createBooking] START');
+        console.log('📝 Request body:', req.body);
+        console.log('👤 User ID:', req.userId);
         const { room_id, check_in_date, check_out_date, guest_count = 1, special_requests = '' } = req.body;
         const user_id = req.userId;
+		
+		// Validate user
+        if (!user_id) {
+            console.log('❌ [createBooking] No user ID provided');
+            return res.status(401).json({ message: 'User not authenticated' });
+        }
 
         // Validate dates
         if (new Date(check_in_date) >= new Date(check_out_date)) {
+			console.log('❌ [createBooking] Invalid dates:', check_in_date, check_out_date);
             return res.status(400).json({
                 message: 'Check-out date must be after check-in date.'
             });
         }
 
         // Check if room exists
+		console.log('🔍 [createBooking] Checking room:', room_id);
         const room = await Room.findById(room_id);
         if (!room) {
+			console.log('❌ [createBooking] Room not found:', room_id);
             return res.status(404).json({
                 message: 'Room not found.'
             });
         }
+		console.log('✅ [createBooking] Room found:', room.room_type);
 
         // Check availability
+		console.log('🔍 [createBooking] Checking availability for dates:', check_in_date, check_out_date);
         const isAvailable = await Booking.isRoomAvailable(room_id, check_in_date, check_out_date);
         if (!isAvailable) {
+			console.log('❌ [createBooking] Room not available');
             return res.status(409).json({
                 message: 'Room is not available for the selected dates.'
             });
         }
+		console.log('✅ [createBooking] Room is available');
 
         // Calculate total price
         const days = Math.ceil((new Date(check_out_date) - new Date(check_in_date)) / (1000 * 60 * 60 * 24));
         const total_price = room.price_per_night * days;
+		console.log('💰 [createBooking] Total price:', total_price, 'for', days, 'nights');
 
         // Create booking
+		console.log('🔍 [createBooking] Creating booking in DB...');
         const booking = await Booking.create({
             user_id,
             room_id,
@@ -43,9 +61,11 @@ const createBooking = async (req, res) => {
             guest_count,
             special_requests
         });
+		console.log('✅ [createBooking] Booking created:', booking.id);
 
         // Get full booking details
         const bookingDetails = await Booking.findById(booking.id);
+		console.log('✅ [createBooking] Booking details fetched');
 
         res.status(201).json({
             message: 'Booking created successfully! Please proceed to payment.',
@@ -54,13 +74,16 @@ const createBooking = async (req, res) => {
 
     } catch (error) {
         console.error('Create booking error:', error);
+		console.error('❌ Stack:', error.stack);
+
         if (error.message === 'Room is not available for the selected dates') {
             return res.status(409).json({
                 message: error.message
             });
         }
         res.status(500).json({
-            message: 'Failed to create booking. Please try again later.'
+            message: 'Failed to create booking. Please try again later.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };
