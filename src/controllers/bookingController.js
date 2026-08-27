@@ -65,6 +65,56 @@ const createBooking = async (req, res) => {
     }
 };
 
+// Creează rezervare pentru guest (fără autentificare)
+const createGuestBooking = async (req, res) => {
+    try {
+        const { room_id, check_in_date, check_out_date, guest_count, special_requests, guest_email, guest_name } = req.body;
+
+        // Validare date
+        if (new Date(check_in_date) >= new Date(check_out_date)) {
+            return res.status(400).json({
+                message: 'Check-out date must be after check-in date.'
+            });
+        }
+
+        // Verifică camera
+        const room = await Room.findById(room_id);
+        if (!room) {
+            return res.status(404).json({ message: 'Room not found.' });
+        }
+
+        // Verifică disponibilitate
+        const isAvailable = await Booking.isRoomAvailable(room_id, check_in_date, check_out_date);
+        if (!isAvailable) {
+            return res.status(409).json({ message: 'Room is not available for the selected dates.' });
+        }
+
+        // Creează rezervarea cu status 'pending_guest'
+        const days = Math.ceil((new Date(check_out_date) - new Date(check_in_date)) / (1000 * 60 * 60 * 24));
+        const total_price = room.price_per_night * days;
+
+        const result = await pool.query(
+            `INSERT INTO bookings 
+             (room_id, check_in_date, check_out_date, total_price, status, guest_count, special_requests, guest_email, guest_name)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             RETURNING *`,
+            [room_id, check_in_date, check_out_date, total_price, 'pending_guest', guest_count || 1, special_requests || '', guest_email, guest_name]
+        );
+
+        res.status(201).json({
+            success: true,
+            bookingId: result.rows[0].id,
+            message: 'Booking created! Please complete your registration to confirm.'
+        });
+
+    } catch (error) {
+        console.error('Create guest booking error:', error);
+        res.status(500).json({
+            message: 'Failed to create booking.'
+        });
+    }
+};
+
 const getUserBookings = async (req, res) => {
     try {
         const bookings = await User.getBookings(req.userId);
@@ -211,6 +261,7 @@ const updateBookingStatus = async (req, res) => {
 
 module.exports = {
     createBooking,
+	createGuestBooking,
     getUserBookings,
     getBookingById,
     cancelBooking,

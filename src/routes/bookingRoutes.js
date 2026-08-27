@@ -19,6 +19,7 @@ router.post(
 router.get('/', bookingController.getUserBookings);
 router.get('/:id', bookingController.getBookingById);
 router.put('/:id/cancel', bookingController.cancelBooking);
+router.post('/guest', bookingController.createGuestBooking);
 
 // Admin only routes
 router.put(
