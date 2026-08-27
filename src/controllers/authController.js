@@ -11,31 +11,42 @@ const generateToken = (userId) => {
 };
 
 const register = async (req, res) => {
+	console.log('🔥 Register endpoint called'); 
+    console.log('📝 Request body:', req.body); 
+	
     try {
         const { email, password, full_name, phone } = req.body;
-
+		console.log('📧 Email:', email);
+		
         // Check if user already exists
-        const existingUser = await User.findByEmail(email);
+        const existingUser = await User.findByEmail(email);		
+		console.log('👤 Existing user found:', existingUser ? 'YES' : 'NO');
+		
         if (existingUser) {
+			console.log('❌ User already exists');
             return res.status(409).json({
                 message: 'User with this email already exists. Please login.'
             });
         }
 
         // Create new user
+		console.log('🔄 Creating new user...');
         const user = await User.create({
             email,
             password,
             full_name,
             phone
         });
+		console.log('✅ User created:', user);
 
         // Generate token
         const token = generateToken(user.id);
+		console.log('🔑 Token generated');
 
         // Remove password from response
         delete user.password_hash;
 
+		console.log('✅ Registration successful!');
         res.status(201).json({
             message: 'User registered successfully!',
             user,
@@ -43,14 +54,20 @@ const register = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('❌ Registration error:', error);
+        console.error('❌ Error stack:', error.stack);
         res.status(500).json({
-            message: 'Registration failed. Please try again later.'
+            success: false,
+            message: 'Registration failed. Please try again later.',
+            error: error.message
         });
     }
 };
 
 const login = async (req, res) => {
+	console.log('🔥🔥🔥 LOGIN FUNCTION CALLED');
+    console.log('📝 Request body:', req.body);
+	
     try {
         const { email, password } = req.body;
 
