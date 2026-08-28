@@ -27,13 +27,10 @@ const createPaymentIntent = async (req, res) => {
             return res.status(400).json({ message: 'Cannot pay for a cancelled booking.' });
         }
 
-        // 🔥 ASIGURĂ-TE CĂ URL-URILE SUNT CORECTE
         const frontendUrl = process.env.FRONTEND_URL || 'https://azurebayresort-frontend.onrender.com';
-        
-        // 🔥 AICI SE SETEAZĂ REDIRECȚIONAREA - ASIGURĂ-TE CĂ RUTA EXISTĂ ÎN FRONTEND
-        const successUrl = `${frontendUrl}/bookingconfirmation/${booking.id}?success=true`;
-        const cancelUrl = `${frontendUrl}/booking/${booking.id}?canceled=true`;
-        
+        		
+		const successUrl = `${frontendUrl}/my-bookings?payment=success`;
+		const cancelUrl = `${frontendUrl}/my-bookings?payment=canceled`;
         console.log('🔗 Success URL:', successUrl);
         console.log('🔗 Cancel URL:', cancelUrl);
         
