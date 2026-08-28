@@ -29,10 +29,8 @@ const createPaymentIntent = async (req, res) => {
 
         const frontendUrl = process.env.FRONTEND_URL || 'https://azurebayresort-frontend.onrender.com';
         		
-		const successUrl = `${frontendUrl}/my-bookings?payment=success`;
-		const cancelUrl = `${frontendUrl}/my-bookings?payment=canceled`;
-        console.log('🔗 Success URL:', successUrl);
-        console.log('🔗 Cancel URL:', cancelUrl);
+const successUrl = `${frontendUrl}/?payment=success&booking=${booking.id}`;
+const cancelUrl = `${frontendUrl}/?payment=canceled`;
         
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
