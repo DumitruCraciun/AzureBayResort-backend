@@ -27,7 +27,16 @@ const createPaymentIntent = async (req, res) => {
             return res.status(400).json({ message: 'Cannot pay for a cancelled booking.' });
         }
 
-        // 🔥 Creează Checkout Session
+        // 🔥 ASIGURĂ-TE CĂ URL-URILE SUNT CORECTE
+        const frontendUrl = process.env.FRONTEND_URL || 'https://azurebayresort-frontend.onrender.com';
+        
+        // 🔥 AICI SE SETEAZĂ REDIRECȚIONAREA - ASIGURĂ-TE CĂ RUTA EXISTĂ ÎN FRONTEND
+        const successUrl = `${frontendUrl}/booking-confirmation/${booking.id}?success=true`;
+        const cancelUrl = `${frontendUrl}/booking/${booking.id}?canceled=true`;
+        
+        console.log('🔗 Success URL:', successUrl);
+        console.log('🔗 Cancel URL:', cancelUrl);
+        
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [
@@ -44,8 +53,8 @@ const createPaymentIntent = async (req, res) => {
                 },
             ],
             mode: 'payment',
-            success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/booking-confirmation/${booking.id}?success=true`,
-            cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/booking/${booking.id}?canceled=true`,
+            success_url: successUrl,
+            cancel_url: cancelUrl,
             metadata: {
                 bookingId: booking.id,
                 userId: userId,
@@ -53,6 +62,7 @@ const createPaymentIntent = async (req, res) => {
         });
 
         console.log('✅ Checkout Session created:', session.id);
+        console.log('✅ Success URL:', session.success_url);
 
         // Update booking with session ID
         await pool.query(
@@ -69,9 +79,13 @@ const createPaymentIntent = async (req, res) => {
 
     } catch (error) {
         console.error('❌ Create payment error:', error);
-        res.status(500).json({ message: 'Failed to create payment.' });
+        res.status(500).json({ 
+            message: 'Failed to create payment.',
+            error: error.message 
+        });
     }
 };
+
 
 const confirmBooking = async (req, res) => {
     try {
