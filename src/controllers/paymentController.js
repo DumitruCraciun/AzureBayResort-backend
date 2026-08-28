@@ -31,7 +31,7 @@ const createPaymentIntent = async (req, res) => {
         const frontendUrl = process.env.FRONTEND_URL || 'https://azurebayresort-frontend.onrender.com';
         
         // 🔥 AICI SE SETEAZĂ REDIRECȚIONAREA - ASIGURĂ-TE CĂ RUTA EXISTĂ ÎN FRONTEND
-        const successUrl = `${frontendUrl}/booking-confirmation/${booking.id}?success=true`;
+        const successUrl = `${frontendUrl}/bookingconfirmation/${booking.id}?success=true`;
         const cancelUrl = `${frontendUrl}/booking/${booking.id}?canceled=true`;
         
         console.log('🔗 Success URL:', successUrl);
